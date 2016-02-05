@@ -23,10 +23,7 @@ class RepositoryLocation:
 
     @property
     def exists(self):
-        if not os.path.exists(self.path):
-            return False
-
-        return True
+        return os.path.exists(self.path)
 
     def create(self):
         os.makedirs(self.path, exist_ok=True)

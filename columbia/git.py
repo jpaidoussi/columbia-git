@@ -69,7 +69,9 @@ class Repository:
 
         return True
 
-    def _git(self, command, arguments=[]):
+    def _git(self, command, arguments=None):
+        if arguments is None:
+            arguments = []
         args = [self.binary, command]
         args.extend(arguments)
         result = subprocess.run(

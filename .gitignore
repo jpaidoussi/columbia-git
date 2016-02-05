@@ -1,0 +1,12 @@
+MANIFEST
+build
+dist
+*.egg-info
+*.pyc
+*.pyo
+*.DS_Store
+env
+.tox
+.ropeproject
+.vagrant
+__pycache__

@@ -129,7 +129,7 @@ class Repository:
         )
 
     def latest_commit(self):
-        result = self._git("rev-parse", ["--verify", "head"])
+        result = self._git("rev-parse", ["--verify", "HEAD"])
         return result.stdout.strip()
 
     def branches(self):

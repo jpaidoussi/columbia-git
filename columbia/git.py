@@ -47,17 +47,18 @@ class GitError(Exception):
 
 
 class Repository:
-    def __init__(self, repository_location, binary):
+    def __init__(self, repository_location, binary, bare=False):
         self._url = repository_location.url
         self.location = repository_location
         self.binary = binary
+        self.bare = bare
 
         # Clone the repo on initialization. NOTE: the properties
         # accessed by the methods below need to be defined before calling
         # the methods.
         if not self.ready:
             self._ready_target_location()
-            self._clone()
+            self._clone(self.bare)
 
     @property
     def ready(self):
@@ -89,9 +90,12 @@ class Repository:
     def _hard_reset(self):
         self._git("reset", ["--hard", "HEAD"])
 
-    def _clone(self):
+    def _clone(self, bare):
         try:
-            self._git("clone", [self._url, self.location.path])
+            args = [self._url, self.location.path]
+            if bare:
+                args.insert(0, "--bare")
+            self._git("clone", args)
         except subprocess.CalledProcessError as exc:
             message = exc.stderr
             # Clone failed, so cleanup the directories.
@@ -157,8 +161,8 @@ class Repository:
         return self.location.fq_path(relative_path)
 
 
-def setup_repository(working_directory, url, binary="/usr/bin/git"):
+def setup_repository(working_directory, url, binary="/usr/bin/git", bare=False):
     """A helper function to construct a Repository with a RepositoryLocation.
     """
     location = RepositoryLocation(working_directory, url)
-    return Repository(location, binary)
+    return Repository(location, binary, bare)

@@ -65,8 +65,16 @@ class Repository:
         if not self.location.exists:
             return False
 
-        if not self.location.path_exists(".git"):
-            return False
+        if self.bare:
+            try:
+                self._git("rev-parse", ["--git-dir"])
+            except subprocess.CalledProcessError:
+                return False
+
+            return True
+        else:
+            if not self.location.path_exists(".git"):
+                return False
 
         return True
 

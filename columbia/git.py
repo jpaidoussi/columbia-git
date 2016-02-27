@@ -26,7 +26,11 @@ class RepositoryLocation:
         return os.path.exists(self.path)
 
     def create(self):
+        if os.path.exists(self.path):
+            return False
+
         os.makedirs(self.path, exist_ok=True)
+        return True
 
     def remove(self):
         shutil.rmtree(self.path)
@@ -52,6 +56,7 @@ class Repository:
         self.location = repository_location
         self.binary = binary
         self.bare = bare
+        self.created = False
 
         # Clone the repo on initialization. NOTE: the properties
         # accessed by the methods below need to be defined before calling
@@ -90,7 +95,7 @@ class Repository:
         return result
 
     def _ready_target_location(self):
-        self.location.create()
+        self.created = self.location.create()
 
     def _remove_target_location(self):
         self.location.remove()
@@ -106,9 +111,10 @@ class Repository:
             self._git("clone", args)
         except subprocess.CalledProcessError as exc:
             message = exc.stderr
-            # Clone failed, so cleanup the directories.
-            # todo: only remove directory if it was just created
-            self.location.remove()
+            # Clone failed, so cleanup the directories, but only if we created
+            # the diretory for the clone attempt.
+            if self.created:
+                self.location.remove()
             raise RepositoryError(message)
 
     def _checkout(self, reference):

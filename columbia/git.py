@@ -107,6 +107,7 @@ class Repository:
         except subprocess.CalledProcessError as exc:
             message = exc.stderr
             # Clone failed, so cleanup the directories.
+            # todo: only remove directory if it was just created
             self.location.remove()
             raise RepositoryError(message)
 
@@ -145,10 +146,16 @@ class Repository:
         return result.stdout.strip()
 
     def branches(self):
-        result = self._git("branch", ["-a"])
+        result = self._git("ls-remote", ["--heads"])
         branches = result.stdout.strip().split("\n")
-        branches = [b.strip() for b in branches]
+        branches = [b.split("refs/heads/")[1] for b in branches]
         return branches
+
+    def tags(self):
+        result = self._git("ls-remote", ["--tags"])
+        tags = result.stdout.strip().split("\n")
+        tags = [t.split("refs/tags/")[1] for t in tags]
+        return tags
 
     def clean(self, thorough=False):
         """Cleans the current working copy of the repository.

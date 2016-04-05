@@ -2,6 +2,7 @@
 
 import hashlib
 import os
+from pathlib import Path
 import shutil
 import subprocess
 import urllib
@@ -15,35 +16,38 @@ class RepositoryLocation:
         self.url_hash = hashlib.md5(self.url.encode("utf-8")).hexdigest()
         self.parent_directory = self.url_hash[:2]
         self.repository_directory = self.url_hash[2:]
-        self.path = os.path.join(
-            self.working_directory,
-            self.parent_directory,
-            self.repository_directory
-        )
+        self.path = Path(self.working_directory)\
+            .joinpath(self.parent_directory)\
+            .joinpath(self.repository_directory)
 
     @property
     def exists(self):
-        return os.path.exists(self.path)
+        return self.path.exists()
 
     def create(self):
-        if os.path.exists(self.path):
+        if self.exists:
             return False
 
-        os.makedirs(self.path, exist_ok=True)
+        self.path.mkdir(parents=True, exist_ok=True)
         return True
 
     def remove(self):
-        shutil.rmtree(self.path)
-        # Check if the parent is now empty and remove it.
-        parent = os.path.join(self.working_directory, self.parent_directory)
-        if not os.listdir(parent):
-            shutil.rmtree(parent)
+        shutil.rmtree(str(self.path))
+        # Remove the parent directory if empty.
+        try:
+            self.path.parent.rmdir()
+        except OSError:
+            # Parent directory isn't empty, do nothing.
+            pass
 
     def fq_path(self, relative_path):
-        return os.path.join(self.path, relative_path)
+        return self.path / relative_path
 
     def path_exists(self, relative_path):
-        return os.path.exists(self.fq_path(relative_path))
+        return self.fq_path(relative_path).exists()
+
+    def search(self, pattern):
+        return self.path.glob(pattern)
 
 
 class RepositoryError(Exception):
@@ -89,7 +93,7 @@ class Repository:
         args = [self.binary, command]
         args.extend(arguments)
         result = subprocess.run(
-            args=args, cwd=self.location.path, stdout=subprocess.PIPE,
+            args=args, cwd=str(self.location.path), stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, universal_newlines=True, check=True
         )
         return result
@@ -105,7 +109,7 @@ class Repository:
 
     def _clone(self, bare):
         try:
-            args = [self._url, self.location.path]
+            args = [self._url, str(self.location.path)]
             if bare:
                 args.insert(0, "--bare")
             self._git("clone", args)
@@ -153,12 +157,18 @@ class Repository:
 
     def branches(self):
         result = self._git("ls-remote", ["--heads"])
+        if not result.stdout:
+            return []
+
         branches = result.stdout.strip().split("\n")
         branches = [b.split("refs/heads/")[1] for b in branches]
         return branches
 
     def tags(self):
         result = self._git("ls-remote", ["--tags"])
+        if not result.stdout:
+            return []
+
         tags = result.stdout.strip().split("\n")
         tags = [t.split("refs/tags/")[1] for t in tags]
         return tags
@@ -180,6 +190,10 @@ class Repository:
         repository root.
         """
         return self.location.fq_path(relative_path)
+
+    def search(self, pattern):
+        """Returns a list of file paths matching the given pattern."""
+        return self.location.search(pattern)
 
 
 def setup_repository(working_directory, url, binary="/usr/bin/git", bare=False):

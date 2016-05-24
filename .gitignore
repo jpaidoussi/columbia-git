@@ -10,3 +10,4 @@ env
 .ropeproject
 .vagrant
 __pycache__
+.cache

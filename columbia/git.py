@@ -1,18 +1,28 @@
 """Abstract handling of git repositories."""
 
+# Python 2 compatability imports
+try:
+    from pathlib import Path
+except ImportError:
+    from pathlib2 import Path
+
+try:
+    from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
+
 import hashlib
 import os
-from pathlib import Path
+
 import shutil
 import subprocess
-import urllib
 
 
 class RepositoryLocation:
     def __init__(self, working_directory, repository_url):
         self.working_directory = working_directory
         self.url = repository_url
-        self.repository_url = urllib.parse.urlparse(repository_url)
+        self.repository_url = urlparse(repository_url)
         self.url_hash = hashlib.md5(self.url.encode("utf-8")).hexdigest()
         self.parent_directory = self.url_hash[:2]
         self.repository_directory = self.url_hash[2:]
@@ -92,9 +102,8 @@ class Repository:
             arguments = []
         args = [self.binary, command]
         args.extend(arguments)
-        result = subprocess.run(
-            args=args, cwd=str(self.location.path), stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE, universal_newlines=True, check=True
+        result = subprocess.check_output(
+            args=args, cwd=str(self.location.path), universal_newlines=True
         )
         return result
 
@@ -153,23 +162,23 @@ class Repository:
 
     def latest_commit(self):
         result = self._git("rev-parse", ["--verify", "HEAD"])
-        return result.stdout.strip()
+        return result.strip()
 
     def branches(self):
         result = self._git("ls-remote", ["--heads"])
-        if not result.stdout:
+        if not result:
             return []
 
-        branches = result.stdout.strip().split("\n")
+        branches = result.strip().split("\n")
         branches = [b.split("refs/heads/")[1] for b in branches]
         return branches
 
     def tags(self):
         result = self._git("ls-remote", ["--tags"])
-        if not result.stdout:
+        if not result:
             return []
 
-        tags = result.stdout.strip().split("\n")
+        tags = result.strip().split("\n")
         tags = [t.split("refs/tags/")[1] for t in tags]
         return tags
 

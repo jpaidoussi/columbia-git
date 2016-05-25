@@ -179,6 +179,15 @@ class Repository:
         branches = [b.split("refs/heads/")[1] for b in branches]
         return branches
 
+    @property
+    def active_branch(self):
+        result = self._git("symbolic-ref", ["HEAD"])
+        if not result:
+            return None
+
+        branch = result.strip()
+        return branch.split("refs/heads/")[1]
+
     def tags(self):
         result = self._git("ls-remote", ["--tags"])
         if not result:

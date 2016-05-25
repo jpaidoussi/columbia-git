@@ -18,17 +18,23 @@ import shutil
 import subprocess
 
 
+def repo_url_hash_path_builder(working_directory, url):
+    url_hash = hashlib.md5(url.encode("utf-8")).hexdigest()
+    parent_directory = url_hash[:2]
+    repository_directory = url_hash[2:]
+    return Path(working_directory)\
+        .joinpath(parent_directory)\
+        .joinpath(repository_directory)
+
+
 class RepositoryLocation:
-    def __init__(self, working_directory, repository_url):
+    def __init__(
+            self, working_directory, repository_url,
+            path_builder_func=repo_url_hash_path_builder):
         self.working_directory = working_directory
         self.url = repository_url
         self.repository_url = urlparse(repository_url)
-        self.url_hash = hashlib.md5(self.url.encode("utf-8")).hexdigest()
-        self.parent_directory = self.url_hash[:2]
-        self.repository_directory = self.url_hash[2:]
-        self.path = Path(self.working_directory)\
-            .joinpath(self.parent_directory)\
-            .joinpath(self.repository_directory)
+        self.path = path_builder_func(working_directory, repository_url)
 
     @property
     def exists(self):

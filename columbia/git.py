@@ -11,6 +11,7 @@ try:
 except ImportError:
     from urlparse import urlparse
 
+import collections
 import hashlib
 import os
 
@@ -19,6 +20,15 @@ import subprocess
 
 
 GIT_BINARY = "/usr/bin/git"
+
+Worktree = collections.namedtuple(
+    "Worktree",
+    [
+        "name",
+        "path",
+        "head",
+    ]
+)
 
 
 def repo_url_hash_path_builder(working_directory, url):
@@ -231,7 +241,17 @@ class Repository:
         if not result:
             return []
 
-        worktrees = result.strip().split("\n")
+        worktrees_list = result.strip().split("\n")
+        worktrees = []
+        for wt in worktrees_list:
+            details = wt.split()
+            worktrees.append(
+                Worktree(
+                    name=details[2].strip("[]"),
+                    path=details[0],
+                    head=details[1]
+                    )
+            )
         return worktrees
 
     def add_worktree(self, branch_name):

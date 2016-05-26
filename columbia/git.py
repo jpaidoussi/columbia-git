@@ -78,7 +78,7 @@ class RepositoryLocation:
         return True
 
     def remove(self):
-        shutil.rmtree(str(self.path))
+        shutil.rmtree(str(self.root_path))
         # Remove the parent directory if empty.
         try:
             self.path.parent.rmdir()
@@ -119,7 +119,6 @@ class Repository:
         # accessed by the methods below need to be defined before calling
         # the methods.
         if not self.ready and clone:
-            self._ready_target_location()
             self.clone(self.bare)
 
     @property
@@ -168,6 +167,7 @@ class Repository:
         self._git("pull")
 
     def clone(self, bare=False):
+        self._ready_target_location()
         args = [self._url, str(self.location.path)]
         if bare:
             args.insert(0, "--bare")
@@ -180,6 +180,10 @@ class Repository:
             if self.created:
                 self.location.remove()
             raise RepositoryError(message)
+
+    def update(self):
+        """Pull the latest changes from remote."""
+        self._pull()
 
     def update_to(self, reference):
         """Make a given reference active.

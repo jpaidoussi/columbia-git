@@ -19,6 +19,9 @@ import subprocess
 
 
 def repo_url_hash_path_builder(working_directory, url):
+    """Get a unique repo path in the given working_directory based on a two
+    level hash of the repo URL.
+    """
     url_hash = hashlib.md5(url.encode("utf-8")).hexdigest()
     parent_directory = url_hash[:2]
     repository_directory = url_hash[2:]
@@ -71,7 +74,7 @@ class RepositoryError(Exception):
 
 
 class Repository:
-    def __init__(self, repository_location, binary, bare=False):
+    def __init__(self, repository_location, binary, bare=False, clone=False):
         self._url = repository_location.url
         self.location = repository_location
         self.binary = binary
@@ -81,7 +84,7 @@ class Repository:
         # Clone the repo on initialization. NOTE: the properties
         # accessed by the methods below need to be defined before calling
         # the methods.
-        if not self.ready:
+        if not self.ready and clone:
             self._ready_target_location()
             self._clone(self.bare)
 

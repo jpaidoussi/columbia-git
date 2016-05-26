@@ -24,9 +24,9 @@ GIT_BINARY = "/usr/bin/git"
 Worktree = collections.namedtuple(
     "Worktree",
     [
-        "name",
         "path",
         "head",
+        "branch",
     ]
 )
 
@@ -167,7 +167,7 @@ class Repository:
     def _pull(self):
         self._git("pull")
 
-    def clone(self, bare):
+    def clone(self, bare=False):
         args = [self._url, str(self.location.path)]
         if bare:
             args.insert(0, "--bare")
@@ -247,9 +247,9 @@ class Repository:
             details = wt.split()
             worktrees.append(
                 Worktree(
-                    name=details[2].strip("[]"),
                     path=details[0],
-                    head=details[1]
+                    head=details[1],
+                    branch=details[2].strip("[]")
                     )
             )
         return worktrees

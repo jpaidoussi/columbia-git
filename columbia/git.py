@@ -280,8 +280,10 @@ class Repository:
         return self.location.search(pattern)
 
 
-def setup_repository(working_directory, url, binary=GIT_BINARY, bare=False):
+def setup_repository(
+        working_directory, url,
+        binary=GIT_BINARY, bare=False, clone=False):
     """A helper function to construct a Repository with a RepositoryLocation.
     """
     location = RepositoryLocation(working_directory, url)
-    return Repository(location, binary, bare=bare, clone=True)
+    return Repository(location, binary, bare=bare, clone=clone)

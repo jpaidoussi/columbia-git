@@ -283,7 +283,7 @@ class Repository:
         # Remove the local branch that was created.
         self._git("branch", ["-d", branch_name])
 
-    def pull_worktree(self, branch_name):
+    def update_worktree(self, branch_name):
         path = str(self.location.worktree_path(branch_name))
         self._pull(cwd=path)
 

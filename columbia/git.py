@@ -139,14 +139,16 @@ class Repository:
 
         return True
 
-    def _git(self, command, arguments=None):
+    def _git(self, command, arguments=None, cwd=None):
+        if cwd is None:
+            cwd = str(self.location.path)
         if arguments is None:
             arguments = []
         args = [self.binary, command]
         args.extend(arguments)
         result = subprocess.check_output(
             args=args,
-            cwd=str(self.location.path),
+            cwd=cwd,
             universal_newlines=True
         )
         return result
@@ -163,8 +165,8 @@ class Repository:
     def _checkout(self, reference):
         self._git("checkout", [reference])
 
-    def _pull(self):
-        self._git("pull")
+    def _pull(self, cwd=None):
+        self._git("pull", cwd=cwd)
 
     def clone(self, bare=False):
         self._ready_target_location()
@@ -280,6 +282,10 @@ class Repository:
         self._git("worktree", ["prune"])
         # Remove the local branch that was created.
         self._git("branch", ["-d", branch_name])
+
+    def pull_worktree(self, branch_name):
+        path = str(self.location.worktree_path(branch_name))
+        self._pull(cwd=path)
 
     def clean(self, thorough=False):
         """Cleans the current working copy of the repository.

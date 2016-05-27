@@ -214,8 +214,8 @@ class Repository:
             ["-a", "-f", "--prefix={0}".format(destination)]
         )
 
-    def latest_commit(self):
-        result = self._git("rev-parse", ["--verify", "HEAD"])
+    def latest_commit(self, cwd=None):
+        result = self._git("rev-parse", ["--verify", "HEAD"], cwd=cwd)
         return result.strip()
 
     def branches(self):
@@ -286,6 +286,8 @@ class Repository:
                 "origin/{0}".format(branch_name)
             ]
         )
+        head = self.latest_commit(cwd=path)
+        return Worktree(path=path, head=head, branch=branch_name)
 
     def remove_worktree(self, branch_name):
         # Remove the worktree of the file system.

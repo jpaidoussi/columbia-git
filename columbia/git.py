@@ -168,6 +168,9 @@ class Repository:
     def _pull(self, cwd=None):
         self._git("pull", cwd=cwd)
 
+    def _split_branch_name(self, reference):
+        return reference.split("refs/heads/")[1]
+
     def clone(self, bare=False):
         self._ready_target_location()
         args = [self._url, str(self.location.path)]
@@ -221,7 +224,7 @@ class Repository:
             return []
 
         branches = result.strip().split("\n")
-        branches = [b.split("refs/heads/")[1] for b in branches]
+        branches = [self._split_branch_name(b) for b in branches]
         return branches
 
     @property
@@ -243,22 +246,32 @@ class Repository:
         return tags
 
     def worktrees(self):
-        result = self._git("worktree", ["list"])
+        result = self._git("worktree", ["list", "--porcelain"])
         if not result:
             return []
 
-        worktrees_list = result.strip().split("\n")
         worktrees = []
-        for wt in worktrees_list:
-            details = wt.split()
-            worktrees.append(
-                Worktree(
-                    path=details[0],
-                    head=details[1],
-                    branch=details[2].strip("[]")
+        current_wt = {}
+        for line in result.strip().splitlines():
+            if not line:
+                # Line is empty, this a worktree boundry
+                worktrees.append(current_wt)
+                current_wt = {}
+                continue
+
+            key, value = line.split(" ")
+            current_wt[key] = value
+        worktrees.append(current_wt)
+
+        tuples = [
+            Worktree(
+                    path=d["worktree"],
+                    head=d["HEAD"],
+                    branch=self._split_branch_name(d["branch"])
                     )
-            )
-        return worktrees
+            for d in worktrees
+        ]
+        return tuples
 
     def add_worktree(self, branch_name):
         path = str(self.location.worktree_path(branch_name))

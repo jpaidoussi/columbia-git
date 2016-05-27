@@ -265,10 +265,10 @@ class Repository:
 
         tuples = [
             Worktree(
-                    path=d["worktree"],
-                    head=d["HEAD"],
-                    branch=self._split_branch_name(d["branch"])
-                    )
+                path=d["worktree"],
+                head=d["HEAD"],
+                branch=self._split_branch_name(d["branch"])
+            )
             for d in worktrees
         ]
         return tuples

@@ -245,7 +245,7 @@ class Repository:
         tags = [t.split("refs/tags/")[1] for t in tags]
         return tags
 
-    def worktrees(self):
+    def worktrees(self, branch_name=None):
         result = self._git("worktree", ["list", "--porcelain"])
         if not result:
             return []
@@ -263,14 +263,22 @@ class Repository:
             current_wt[key] = value
         worktrees.append(current_wt)
 
-        tuples = [
-            Worktree(
+        tuples = []
+        for d in worktrees:
+            wt = Worktree(
                 path=d["worktree"],
                 head=d["HEAD"],
                 branch=self._split_branch_name(d["branch"])
             )
-            for d in worktrees
-        ]
+            if branch_name == wt.branch:
+                return wt
+            tuples.append(wt)
+
+        if branch_name is not None:
+            # If branch_name was specified but we got here without finding and
+            # returning it then it is invalid.
+            msg = "Unknown worktree: '{0}'".format(branch_name)
+            raise RepositoryError(msg)
         return tuples
 
     def add_worktree(self, branch_name):
@@ -290,8 +298,9 @@ class Repository:
         return Worktree(path=path, head=head, branch=branch_name)
 
     def remove_worktree(self, branch_name):
-        # Remove the worktree of the file system.
-        path = str(self.location.worktree_path(branch_name))
+        wt = self.worktrees(branch_name)
+        path = wt.path
+        # Remove the worktree off the file system.
         shutil.rmtree(path)
         # Force git to update the worktrees now.
         self._git("worktree", ["prune"])
@@ -299,7 +308,8 @@ class Repository:
         self._git("branch", ["-d", branch_name])
 
     def update_worktree(self, branch_name):
-        path = str(self.location.worktree_path(branch_name))
+        wt = self.worktrees(branch_name)
+        path = wt.path
         self._pull(cwd=path)
 
     def clean(self, thorough=False):
